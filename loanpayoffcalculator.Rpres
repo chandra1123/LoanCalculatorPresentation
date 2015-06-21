@@ -1,0 +1,82 @@
+Loan Payment Calculator
+========================================================
+author: Chandra Prakash
+date: 06-21-2015
+
+Loan Payment Calculator Overview
+========================================================
+
+* Developed using Shiny and R.  
+* Calculates monthly payments required to payoff a loan.
+* Calculates amortization table.
+* Allows to vary inputs using sliders
+  + Loan Amount
+  + Interest Rate
+  + Term of Loan
+
+
+
+
+Application Demo
+========================================================
+![Application LAyout](loanpayoffcalculator-figure/applicationLayout.png)
+
+Monthly Payment Calculation
+========================================================
+```{r echo=FALSE}
+library(scales)
+
+#Calculate Regular Payment.
+pmt <- function(rate, nper, pv) {
+  if (rate == 0) return (pv / nper)
+  
+  factor <- rate / (1 - 1/(1+rate)^nper)
+  return (pv * factor)
+}
+
+rate <- 3
+loan <- 1000
+term <- 3
+monthlyPayment <- pmt(rate/(12*100), term *12, loan)
+data.frame(rate = rate, 
+           loan = dollar(loan), 
+           term = term, 
+           monthlyPayment=dollar(monthlyPayment),
+           totalPaid = dollar(monthlyPayment * term * 12))
+```
+
+Amortization Calculation
+========================================================
+
+```{r echo=FALSE}
+#Calculate Amortization Table.
+amortization <- function(rate, nper, pv) {
+  pmt <- pmt(rate, nper, pv)
+  data <- data.frame(month = 1:nper, payment = c(rep(pmt, nper)), 
+                     interestPayment = NA,
+                     principalPayment= NA, remainingPrincipal=NA)
+  data$totalPaid <- cumsum(data$payment)
+  principal <- pv
+  for (i in 1:nper) {
+    interestPayment <- principal * rate
+    principalPayment <- pmt - interestPayment
+    principal <- principal - principalPayment
+    data$interestPayment[i] <- interestPayment
+    data$principalPayment[i] <- principalPayment
+    data$remainingPrincipal[i] <- principal
+  }
+  data
+}
+
+rate <- 3
+loan <- 1000
+term <- 3
+amort <- amortization(rate/(12*100), term *12, loan)
+amort <- data.frame(month=amort$month,
+                    interest = dollar(amort$interestPayment),
+                    principal = dollar(amort$principalPayment),
+                    outstanding = dollar(amort$remainingPrincipal))
+head(amort)
+```
+
+
